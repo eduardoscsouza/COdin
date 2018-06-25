@@ -20,18 +20,18 @@
 
 
 
-Neuron * new_neuron(nn_size_t n_dim, nn_float_t (*actv)(nn_float_t))
+Neuron * new_neuron(nn_size_t n_dim, codin_float_t (*actv)(codin_float_t))
 {
 	Neuron * neuron = (Neuron*) malloc(sizeof(Neuron));
 	neuron->actv = actv;
 	neuron->n_dim = n_dim;
 	
-	neuron->weights = (nn_float_t*) malloc((n_dim+1) * sizeof(nn_float_t));
+	neuron->weights = (codin_float_t*) malloc((n_dim+1) * sizeof(codin_float_t));
 	unsigned long long aux_rand;
 	nn_size_t i;
 	for (i=0; i<n_dim+1; i++){
 		syscall(SYS_getrandom, &aux_rand, sizeof(aux_rand), 0);
-		neuron->weights[i] = ((aux_rand / (nn_float_t)ULLONG_MAX)*(INIT_MAX-INIT_MIN)) + INIT_MIN;
+		neuron->weights[i] = ((aux_rand / (codin_float_t)ULLONG_MAX)*(INIT_MAX-INIT_MIN)) + INIT_MIN;
 	}
 
 	return neuron;
@@ -43,9 +43,9 @@ void delete_neuron(Neuron * neuron)
 	free(neuron);
 }
 
-nn_float_t neuron_forward(Neuron * neuron, nn_float_t * input)
+codin_float_t neuron_forward(Neuron * neuron, codin_float_t * input)
 {
-	nn_float_t net = 0.0;
+	codin_float_t net = 0.0;
 	#if NEURON_PARALLEL
 		#pragma omp parallel num_threads(NEURON_N_THREADS)
 		{
@@ -53,7 +53,7 @@ nn_float_t neuron_forward(Neuron * neuron, nn_float_t * input)
 			nn_size_t block_size = neuron->n_dim/omp_get_num_threads(), lower_bound = block_size*id, upper_bound = block_size*(id+1);
 			if (id == omp_get_max_threads()-1) upper_bound = neuron->n_dim;
 
-			nn_float_t aux;
+			codin_float_t aux;
 			nn_size_t i;
 			for(i=lower_bound; i<upper_bound; i++){
 				aux = neuron->weights[i] * input[i];
@@ -82,7 +82,7 @@ void print_neuron(Neuron * neuron)
 
 
 
-Layer * new_layer(nn_size_t n_neurons, nn_size_t in_size, nn_float_t (*actv)(nn_float_t))
+Layer * new_layer(nn_size_t n_neurons, nn_size_t in_size, codin_float_t (*actv)(codin_float_t))
 {
 	Layer * layer = (Layer*) malloc(sizeof(Layer));
 	layer->n_neurons = n_neurons;
@@ -104,9 +104,9 @@ void delete_layer(Layer * layer)
 	free(layer);
 }
 
-nn_float_t * layer_forward(Layer * layer, nn_float_t * input)
+codin_float_t * layer_forward(Layer * layer, codin_float_t * input)
 {
-	nn_float_t * output = (nn_float_t*) malloc(layer->n_neurons*sizeof(nn_float_t));
+	codin_float_t * output = (codin_float_t*) malloc(layer->n_neurons*sizeof(codin_float_t));
 
 	int i;
 	#if LAYER_PARALLEL
@@ -128,7 +128,7 @@ void print_layer(Layer * layer)
 
 
 
-Network * new_network(nn_size_t n_layers, nn_size_t * layers_sizes, nn_float_t (**layers_actvs)(nn_float_t), nn_size_t in_size)
+Network * new_network(nn_size_t n_layers, nn_size_t * layers_sizes, codin_float_t (**layers_actvs)(codin_float_t), nn_size_t in_size)
 {
 	Network * network = (Network*) malloc(sizeof(Network));
 	network->n_layers = n_layers;
@@ -154,7 +154,7 @@ Network * copy_network(Network * cur_network)
 {
 	int i, j;
 	nn_size_t * layers_sizes = (nn_size_t*) malloc(cur_network->n_layers*sizeof(nn_size_t));
-	nn_float_t (**layers_actvs)(nn_float_t) = (nn_float_t (**)(nn_float_t)) malloc(cur_network->n_layers*sizeof(nn_float_t (*)(nn_float_t)));
+	codin_float_t (**layers_actvs)(codin_float_t) = (codin_float_t (**)(codin_float_t)) malloc(cur_network->n_layers*sizeof(codin_float_t (*)(codin_float_t)));
 	for (i=0; i<cur_network->n_layers; i++){
 		layers_sizes[i] = cur_network->layers[i]->n_neurons;
 		layers_actvs[i] = cur_network->layers[i]->actv;
@@ -166,7 +166,7 @@ Network * copy_network(Network * cur_network)
 			memcpy(
 				network->layers[i]->neurons[j]->weights,
 				cur_network->layers[i]->neurons[j]->weights,
-				(cur_network->layers[i]->neurons[j]->n_dim+1)*sizeof(nn_float_t)
+				(cur_network->layers[i]->neurons[j]->n_dim+1)*sizeof(codin_float_t)
 			);
 		}
 	}
@@ -176,10 +176,10 @@ Network * copy_network(Network * cur_network)
 	return network;
 }
 
-nn_float_t * network_forward(Network * network, nn_float_t * in)
+codin_float_t * network_forward(Network * network, codin_float_t * in)
 {
 	int i;
-	nn_float_t * cur_vect = layer_forward(network->layers[0], in), * next_vect = NULL;
+	codin_float_t * cur_vect = layer_forward(network->layers[0], in), * next_vect = NULL;
 	for (i=1; i<network->n_layers; i++){
 		next_vect = layer_forward(network->layers[i], cur_vect);
 		free(cur_vect);
@@ -200,29 +200,29 @@ void print_network(Network * network)
 
 
 
-nn_float_t relu(nn_float_t net)
+codin_float_t relu(codin_float_t net)
 {
 	if (net>=0.0) return net;
 	else return 0.0;
 }
 
-nn_float_t soft_relu(nn_float_t net)
+codin_float_t soft_relu(codin_float_t net)
 {
 	return log(1.0 + exp(net));
 }
 
-nn_float_t step(nn_float_t net)
+codin_float_t step(codin_float_t net)
 {
 	if (net>=0.0) return 1.0;
 	else return 0.0;
 }
 
-nn_float_t sigm(nn_float_t net)
+codin_float_t sigm(codin_float_t net)
 {
 	return 1.0/(1.0 + exp(-net));
 }
 
-nn_float_t linear(nn_float_t net)
+codin_float_t linear(codin_float_t net)
 {
 	return net;
 }
