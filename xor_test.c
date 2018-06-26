@@ -70,7 +70,7 @@ int main(int argc, char * argv[])
 
 
 	codin_size_t aux_layers_sizes[] = TEST_NETWORK_LAYERS_SIZES;
-	codin_float_t (*aux_layers_actvs[])(codin_float_t) = TEST_NETWORK_LAYERS_ACTVS;
+	codin_float_t (*aux_layers_actvs[])(codin_float_t, codin_bool_t) = TEST_NETWORK_LAYERS_ACTVS;
 	Network * network = new_network(TEST_NETWORK_N_LAYERS, aux_layers_sizes, aux_layers_actvs, TEST_NETWORK_input_size);
 	in = rand_vect(network->input_size);
 	printf("Input: ");
@@ -87,7 +87,7 @@ int main(int argc, char * argv[])
 
 
 	codin_size_t xor_layers_sizes[] = TEST_XOR_LAYERS_SIZES;
-	codin_float_t (*xor_layers_actvs[])(codin_float_t) = TEST_XOR_LAYERS_ACTVS;
+	codin_float_t (*xor_layers_actvs[])(codin_float_t, codin_bool_t) = TEST_XOR_LAYERS_ACTVS;
 	network = new_network(TEST_XOR_N_LAYERS, xor_layers_sizes, xor_layers_actvs, TEST_XOR_input_size);
 	network->layers[0]->neurons[0]->weights[0] = network->layers[0]->neurons[0]->weights[1] = 1.0;
 	network->layers[0]->neurons[0]->weights[2] = -0.5;

@@ -73,7 +73,7 @@ void free_matrix(void ** matrix, size_t height)
 
 
 
-Neuron * new_neuron(codin_size_t n_weights, codin_float_t (*activation)(codin_float_t))
+Neuron * new_neuron(codin_size_t n_weights, codin_float_t (*activation)(codin_float_t, codin_bool_t))
 {
 	Neuron * neuron = (Neuron*) malloc(sizeof(Neuron));
 	neuron->activation = activation;
@@ -127,7 +127,7 @@ codin_float_t neuron_forward(Neuron * neuron, codin_float_t * input)
 	
 	memcpy(neuron->last_input, input, (neuron->n_weights-1) * sizeof(codin_float_t));
 	neuron->last_net = net;
-	neuron->last_output = neuron->activation(net);
+	neuron->last_output = neuron->activation(net, 0);
 	return neuron->last_output;
 }
 
@@ -140,7 +140,7 @@ void print_neuron(Neuron * neuron)
 
 
 
-Layer * new_layer(codin_size_t n_neurons, codin_size_t input_size, codin_float_t (*activation)(codin_float_t))
+Layer * new_layer(codin_size_t n_neurons, codin_size_t input_size, codin_float_t (*activation)(codin_float_t, codin_bool_t))
 {
 	
 	Layer * layer = (Layer*) malloc(sizeof(Layer));
@@ -214,7 +214,7 @@ void print_layer(Layer * layer)
 
 
 
-Network * new_network(codin_size_t n_layers, codin_size_t * layers_sizes, codin_float_t (**layers_activations)(codin_float_t), codin_size_t input_size)
+Network * new_network(codin_size_t n_layers, codin_size_t * layers_sizes, codin_float_t (**layers_activations)(codin_float_t, codin_bool_t), codin_size_t input_size)
 {
 	Network * network = (Network*) malloc(sizeof(Network));
 	network->n_layers = n_layers;
@@ -295,29 +295,27 @@ void print_network(Network * network)
 
 
 
-codin_float_t relu(codin_float_t net)
+codin_float_t relu(codin_float_t net, codin_bool_t derivative)
 {
-	if (net>=0.0) return net;
-	else return 0.0;
+	return (net>=0.0) ? (derivative ? 1.0 : net) : 0.0;
 }
 
-codin_float_t soft_relu(codin_float_t net)
+codin_float_t softplus(codin_float_t net, codin_bool_t derivative)
 {
-	return log(1.0 + exp(net));
+	return derivative ? 1.0/(1.0 + exp(-net)) : log(1.0 + exp(net));
 }
 
-codin_float_t step(codin_float_t net)
+codin_float_t step(codin_float_t net, codin_bool_t derivative)
 {
-	if (net>=0.0) return 1.0;
-	else return 0.0;
+	return (net>=0.0 && !derivative) ? 1.0 : 0.0;
 }
 
-codin_float_t sigm(codin_float_t net)
+codin_float_t sigm(codin_float_t net, codin_bool_t derivative)
 {
-	return 1.0/(1.0 + exp(-net));
+	return derivative ? (1.0/(1.0 + exp(-net)))*(1.0/(1.0 + exp(net))) : 1.0/(1.0 + exp(-net));
 }
 
-codin_float_t linear(codin_float_t net)
+codin_float_t linear(codin_float_t net, codin_bool_t derivative)
 {
-	return net;
+	return derivative ? 1.0 : net;
 }
