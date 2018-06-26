@@ -3,26 +3,39 @@
 
 
 
-#include "datastructures.h"
+typedef unsigned short int codin_size_t;
+typedef float codin_float_t;
 
 typedef struct Neuron
 {
-	codin_size_t n_dim;
+	codin_size_t n_weights;
 	codin_float_t * weights;
-	codin_float_t (*actv)(codin_float_t);
+	codin_float_t (*activation)(codin_float_t);
+
+	codin_float_t * last_input, * last_gradient, * gradient_propagation;
+	codin_float_t last_net, last_output;
 }Neuron;
 
 typedef struct Layer
 {
-	codin_size_t n_neurons, in_size;
+	codin_size_t n_neurons, input_size;
 	Neuron ** neurons;
-	codin_float_t (*actv)(codin_float_t);
+
+	/*
+	Data is replicated between Neuron and Layer. This is done
+	so that they are more independent from each other, at the cost
+	of less memory effiency and harder data coherency. 
+	*/
+	codin_float_t ** gradient_propagation, ** last_gradient;
+	codin_float_t * last_input, * last_net, * last_output;
 }Layer;
 
 typedef struct Network
 {
-	codin_size_t n_layers, in_size;
+	codin_size_t n_layers, input_size;
 	Layer ** layers;
+
+	codin_float_t * last_input, * last_output;
 }Network;
 
 
