@@ -38,7 +38,7 @@ codin_float_t * random_vector(codin_size_t size, codin_float_t min, codin_float_
 		rand_max = ULLONG_MAX;
 	#else
 		rand_max = RAND_MAX;
-		srand(time(NULL));
+		srand(clock());
 	#endif
 	
 	codin_size_t i;
@@ -64,11 +64,11 @@ void ** alloc_matrix(size_t height, size_t width, size_t element_size)
 	return matrix;
 }
 
-void free_matrix(void ** matrx, size_t height)
+void free_matrix(void ** matrix, size_t height)
 {
 	size_t i;
 	for (i=0; i<height; i++) free(matrix[i]);
-	free(matrix)
+	free(matrix);
 }
 
 
@@ -121,7 +121,7 @@ codin_float_t neuron_forward(Neuron * neuron, codin_float_t * input)
 		}
 	#else
 		codin_size_t i;
-		for (i=0; i<neuron->n_mults; i++) net += neuron->weights[i] * input[i];
+		for (i=0; i<n_mults; i++) net += neuron->weights[i] * input[i];
 	#endif
 	net += neuron->weights[neuron->n_weights-1];
 	
@@ -172,8 +172,8 @@ void delete_layer(Layer * layer)
 	codin_size_t i;
 	for (i=0; i<layer->n_neurons; i++) delete_neuron(layer->neurons[i]);
 	free(layer->neurons);
-	free_matrix(layer->gradient_propagation, layer->n_neurons);
-	free_matrix(layer->last_gradient, layer->n_neurons);
+	free_matrix((void**) layer->gradient_propagation, layer->n_neurons);
+	free_matrix((void**) layer->last_gradient, layer->n_neurons);
 	free(layer->last_input);
 	free(layer->last_net);
 	free(layer->last_output);
