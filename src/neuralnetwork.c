@@ -11,6 +11,9 @@
 #include <sys/syscall.h>
 #include <omp.h>
 
+/*
+Quasiconvexity interval for sigmoid function
+*/
 #define INIT_RAND_MAX 2.5
 #define INIT_RAND_MIN -2.5
 
@@ -28,6 +31,11 @@ Should be left as is for learning purposes
 
 /*
 Auxiliary functions
+*/
+
+/*
+Creates a vector of random numbers within the range
+[INIT_RAND_MIN, INIT_RAND_MAX], inclusive.
 */
 codin_float_t * random_vector(codin_size_t size, codin_float_t min, codin_float_t max)
 {
@@ -55,15 +63,22 @@ codin_float_t * random_vector(codin_size_t size, codin_float_t min, codin_float_
 	return vector;
 }
 
+/*
+Allocates a matrix whose elements have element_size bytes of length.
+*/
 void ** alloc_matrix(size_t height, size_t width, size_t element_size)
 {
 	size_t i;
 	void ** matrix = (void**) malloc(height * sizeof(void*));
-	for (i=0; i<height; i++) matrix[i] = (void*) malloc(width * element_size);
+	for (i=0; i<height; i++)
+		matrix[i] = (void*) malloc(width * element_size);
 
 	return matrix;
 }
 
+/*
+Deallocates a matrix created with alloc_matrix().
+*/
 void free_matrix(void ** matrix, size_t height)
 {
 	size_t i;
@@ -72,7 +87,9 @@ void free_matrix(void ** matrix, size_t height)
 }
 
 
-
+/*
+Creates a new neuron for use inside a Layer.
+*/
 Neuron * new_neuron(codin_size_t n_weights, codin_float_t (*activation)(codin_float_t, codin_bool_t))
 {
 	Neuron * neuron = (Neuron*) malloc(sizeof(Neuron));
@@ -83,6 +100,9 @@ Neuron * new_neuron(codin_size_t n_weights, codin_float_t (*activation)(codin_fl
 	neuron->last_gradient = (codin_float_t*) malloc(n_weights * sizeof(codin_float_t));
 	neuron->gradient_propagation = (codin_float_t*) malloc(n_weights * sizeof(codin_float_t));
 	
+	/*
+	Activation of the last forward pass through this neuron.
+	*/
 	neuron->last_net = neuron->last_output = 0;
 	memset(neuron->last_input, 0, (n_weights-1) * sizeof(codin_float_t));
 	memset(neuron->last_gradient, 0, n_weights * sizeof(codin_float_t));
@@ -91,6 +111,9 @@ Neuron * new_neuron(codin_size_t n_weights, codin_float_t (*activation)(codin_fl
 	return neuron;
 }
 
+/*
+Frees memory allocated for a neuron.
+*/
 void delete_neuron(Neuron * neuron)
 {
 	free(neuron->weights);
@@ -100,6 +123,9 @@ void delete_neuron(Neuron * neuron)
 	free(neuron);
 }
 
+/*
+Calculates the output of a neuron based on its inputs.
+*/
 codin_float_t neuron_forward(Neuron * neuron, codin_float_t * input)
 {
 	codin_float_t net = 0.0;
@@ -121,8 +147,12 @@ codin_float_t neuron_forward(Neuron * neuron, codin_float_t * input)
 		}
 	#else
 		codin_size_t i;
-		for (i=0; i<n_mults; i++) net += neuron->weights[i] * input[i];
+		for (i=0; i<n_mults; i++)
+			net += neuron->weights[i] * input[i];
 	#endif
+	/*
+	Include bias into net.
+	*/
 	net += neuron->weights[neuron->n_weights-1];
 	
 	memcpy(neuron->last_input, input, (neuron->n_weights-1) * sizeof(codin_float_t));
@@ -131,15 +161,21 @@ codin_float_t neuron_forward(Neuron * neuron, codin_float_t * input)
 	return neuron->last_output;
 }
 
+/*
+Prints the weights of a neuron.
+*/
 void print_neuron(Neuron * neuron)
 {
 	codin_size_t i;
-	for (i=0; i<neuron->n_weights-1; i++) printf("Weight[%d] = %f\n", i, neuron->weights[i]);
+	for (i=0; i<neuron->n_weights-1; i++)
+		printf("Weight[%d] = %f\n", i, neuron->weights[i]);
 	printf("Beta = %f\n", neuron->weights[neuron->n_weights-1]);
 }
 
 
-
+/*
+Creates a new layer of neurons.
+*/
 Layer * new_layer(codin_size_t n_neurons, codin_size_t input_size, codin_float_t (*activation)(codin_float_t, codin_bool_t))
 {
 	
@@ -152,6 +188,10 @@ Layer * new_layer(codin_size_t n_neurons, codin_size_t input_size, codin_float_t
 	layer->last_net = (codin_float_t*) malloc(n_neurons * sizeof(codin_float_t));
 	layer->last_output = (codin_float_t*) malloc(n_neurons * sizeof(codin_float_t));
 	
+	/*
+	Values for activation and derivatives from the last forward
+	pass through this layer.
+	*/
 	codin_size_t i;
 	memset(layer->last_input, 0, input_size * sizeof(codin_float_t));
 	memset(layer->last_net, 0, n_neurons * sizeof(codin_float_t));
@@ -162,15 +202,20 @@ Layer * new_layer(codin_size_t n_neurons, codin_size_t input_size, codin_float_t
 	}
 
 	layer->neurons = (Neuron**) malloc(n_neurons * sizeof(Neuron*));
-	for (i=0; i<n_neurons; i++) layer->neurons[i] = new_neuron(input_size+1, activation);
+	for (i=0; i<n_neurons; i++)
+		layer->neurons[i] = new_neuron(input_size+1, activation);
 
 	return layer;
 }
 
+/*
+Frees memory allocated for a layer and its neurons.
+*/
 void delete_layer(Layer * layer)
 {
 	codin_size_t i;
-	for (i=0; i<layer->n_neurons; i++) delete_neuron(layer->neurons[i]);
+	for (i=0; i<layer->n_neurons; i++)
+		delete_neuron(layer->neurons[i]);
 	free(layer->neurons);
 	free_matrix((void**) layer->gradient_propagation, layer->n_neurons);
 	free_matrix((void**) layer->last_gradient, layer->n_neurons);
@@ -180,6 +225,10 @@ void delete_layer(Layer * layer)
 	free(layer);
 }
 
+/*
+Calculates the output of all the neurons of a layer, and returns them
+as a vector.
+*/
 codin_float_t * layer_forward(Layer * layer, codin_float_t * input)
 {
 	codin_float_t * output = (codin_float_t*) malloc(layer->n_neurons * sizeof(codin_float_t));
@@ -203,6 +252,9 @@ codin_float_t * layer_forward(Layer * layer, codin_float_t * input)
 	return output;
 }
 
+/*
+Prints all the weights of all the neurons in the layer.
+*/
 void print_layer(Layer * layer)
 {
 	codin_size_t i;
@@ -213,7 +265,9 @@ void print_layer(Layer * layer)
 }
 
 
-
+/*
+Creates a new neural network with the specified number of neurons in each layer.
+*/
 Network * new_network(codin_size_t n_layers, codin_size_t * layers_sizes, codin_float_t (**layers_activations)(codin_float_t, codin_bool_t), codin_size_t input_size)
 {
 	Network * network = (Network*) malloc(sizeof(Network));
@@ -228,15 +282,20 @@ Network * new_network(codin_size_t n_layers, codin_size_t * layers_sizes, codin_
 	codin_size_t i;
 	network->layers = (Layer**) malloc(network->n_layers * sizeof(Layer*));
 	network->layers[0] = new_layer(layers_sizes[0], input_size, layers_activations[0]);
-	for (i=1; i<n_layers; i++) network->layers[i] = new_layer(layers_sizes[i], layers_sizes[i-1], layers_activations[i]);
+	for (i=1; i<n_layers; i++)
+		network->layers[i] = new_layer(layers_sizes[i], layers_sizes[i-1], layers_activations[i]);
 
 	return network;
 }
 
+/*
+Frees memory allocated for a network, its layers and its neurons.
+*/
 void delete_network(Network * network)
 {
 	codin_size_t i;
-	for (i=0; i<network->n_layers; i++) delete_layer(network->layers[i]);
+	for (i=0; i<network->n_layers; i++)
+		delete_layer(network->layers[i]);
 	free(network->layers);
 	free(network->last_input);
 	free(network->last_output);
@@ -271,6 +330,13 @@ Network * copy_network(Network * cur_network)
 }
 */
 
+/*
+Calculates the output of a network by forwarding the input through
+all the layers in order.
+The output of the first layer gets passed as the input to the second layer,
+the second layer's output gets passed to the third one and so on.
+The output of the network is defined as the output of its last layer.
+*/
 codin_float_t * network_forward(Network * network, codin_float_t * in)
 {
 	codin_size_t i;
@@ -284,6 +350,9 @@ codin_float_t * network_forward(Network * network, codin_float_t * in)
 	return next_vect;
 }
 
+/*
+Prints the weights of all the neurons of the network, organized by layer.
+*/
 void print_network(Network * network)
 {
 	codin_size_t i;
@@ -294,27 +363,47 @@ void print_network(Network * network)
 }
 
 
-
+/*
+ReLU - Rectified Linear Unit
+Zero if net is negative, identity otherwise.
+*/
 codin_float_t relu(codin_float_t net, codin_bool_t derivative)
 {
 	return (net>=0.0) ? (derivative ? 1.0 : net) : 0.0;
 }
 
+/*
+Softplus - smooth equivalent of ReLU
+0 for very negative net, 0.5 for net = 0, identity for very positive net.
+Converges quickly to its limit functions.
+*/
 codin_float_t softplus(codin_float_t net, codin_bool_t derivative)
 {
 	return derivative ? 1.0/(1.0 + exp(-net)) : log(1.0 + exp(net));
 }
 
+/*
+Step - discontinuous conditional
+0 if net < 0, 1 if net >= 0.
+*/
 codin_float_t step(codin_float_t net, codin_bool_t derivative)
 {
 	return (net>=0.0 && !derivative) ? 1.0 : 0.0;
 }
 
+/*
+Sigmoid - continuous conditional
+0 for very negative net, 1 for very positive net.
+*/
 codin_float_t sigm(codin_float_t net, codin_bool_t derivative)
 {
 	return derivative ? (1.0/(1.0 + exp(-net)))*(1.0/(1.0 + exp(net))) : 1.0/(1.0 + exp(-net));
 }
 
+/*
+Linear - identity function
+linear(net) = net for every net.
+*/
 codin_float_t linear(codin_float_t net, codin_bool_t derivative)
 {
 	return derivative ? 1.0 : net;

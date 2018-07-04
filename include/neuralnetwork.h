@@ -7,16 +7,32 @@ typedef unsigned int codin_size_t;
 typedef float codin_float_t;
 typedef unsigned char codin_bool_t;
 
+/*
+An atomic processing unit of the network.
+Calculates a "net" value based on a wheighted sum over its inputs,
+as well as a fixed bias.
+Its output is an activation function applied to net.
+*/
 typedef struct Neuron
 {
 	codin_size_t n_weights;
 	codin_float_t * weights;
+
+	/*
+	Receives a value for net, as well as a flag which determines
+	whether the function itself or its derivative should be calculated.
+	*/
 	codin_float_t (*activation)(codin_float_t, codin_bool_t);
 
 	codin_float_t * last_input, * last_gradient, * gradient_propagation;
 	codin_float_t last_net, last_output;
 }Neuron;
 
+/*
+A layer of multiple neurons.
+Each neuron of a layer has its output connected to the input of
+all neurons in the next layer.
+*/
 typedef struct Layer
 {
 	codin_size_t n_neurons, input_size;
@@ -31,6 +47,9 @@ typedef struct Layer
 	codin_float_t * last_input, * last_net, * last_output;
 }Layer;
 
+/*
+All a neural network is is a sequence of neuron layers.
+*/
 typedef struct Network
 {
 	codin_size_t n_layers, input_size;
