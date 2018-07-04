@@ -36,7 +36,7 @@
 # Output file name
 #
 
-OUT := out
+OUT := neuralnetwork.out
 
 
 #
@@ -68,21 +68,21 @@ SRC_PTRN := "*."$(SRC_FILE)
 #     LIBS := m GL
 #
 
-LIBS :=
+LIBS := m
 
 
 #
 # Compile flags
 #
 
-C_FLAGS = -L$(LIB_DIR) -I$(INC_DIR) $(addprefix -l,$(LIBS))
+C_FLAGS = -fopenmp -O3 -L$(LIB_DIR) -I$(INC_DIR) $(addprefix -l,$(LIBS))
 
 
 #
 # Flags for running valgrind
 #
 
-VALGRIND_FLAGS := --leak-check=full --show-leak-kinds=all
+VALGRIND_FLAGS := --leak-check=full --show-leak-kinds=all --track-origins=yes
 
 
 #
@@ -281,7 +281,7 @@ endif
 RUN_CMD := $(RUN_CMD) $(ARGS)
 
 ifdef debug_mode
-C_FLAGS += -g
+C_FLAGS += -g -Wall -Wextra -O0
 endif
 
 ifdef case
@@ -311,6 +311,8 @@ all: $(BLD_DIR)/$(OUT)
 
 g: clean all
 
+debug: g
+
 run:
 	@$(RUN_CMD) | tee $(STDOUT_LOG)
 	@printf "====================\n"
@@ -334,6 +336,8 @@ arun: all run
 rebrun: rebuild run
 
 rebuild: clean all
+
+release: rebuild
 
 zip:
 	@zip -9q $(ZIP).zip $(BLD_DIR)/.gitkeep $(firstword $(MAKEFILE_LIST)) -r \
