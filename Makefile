@@ -43,7 +43,7 @@ OUT := neuralnetwork.out
 # Zip file name
 #
 
-ZIP := proj.zip
+ZIP := COdin
 
 
 #
